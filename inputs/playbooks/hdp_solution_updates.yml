@@ -1,0 +1,121 @@
+---
+# Copyright 2017 IBM Corp.
+#
+# All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed: to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: hdp_solution_updates.yml
+  hosts: localhost
+  vars:
+    hdp_solution_updates_path_local: "{{ hostvars['localhost']['project_path_local'] }}/hdp_solution_updates"
+  gather_facts: yes
+  tasks:
+    - name: "Find profiles for which i40e updates are required"
+      shell:
+        "ls -1 {{ hdp_solution_updates_path_local }}/i40e"
+      register: profiles_i40e
+      become: yes
+      become_method: sudo
+
+- hosts: deployer
+  vars:
+    project_path_local: "{{ hostvars['localhost']['project_path_local'] }}"
+    hdp_solution_updates_path_local: "{{ hostvars['localhost']['project_path_local'] }}/hdp_solution_updates"
+    profiles_i40e: "{{ hostvars['localhost']['profiles_i40e'] }}"
+  tasks:
+    # apply the i403 patch to indicated profiles (and distro)
+    # required only for RHEL 7.2 on Briggs and Stratton
+    # note: rename on copy
+    # note: dest directory should already exist from the distro creation previously
+    # note: cobbler profile and distro names must be the same
+
+    - name: "Find profiles existing in this deployment"
+      shell:
+        "cobbler profile list | sed 's: ::g'"
+      register: profiles_existing
+      become: yes
+      become_method: sudo
+
+    - name: "Existing profiles: {{ profiles_existing.stdout_lines | to_nice_json(indent=2) }}"
+      shell:
+        "echo"
+
+    - name: "Applying i40e updates to profile(s): {{ profiles_i40e.stdout_lines | intersect(profiles_existing.stdout_lines) | to_nice_json(indent=2) }}"
+      shell:
+        "echo"
+
+    - name: "Set the kopts for applicable profile(s) to get the i40e patch"
+      shell:
+        "cobbler profile edit --name={{ item }} --kopts=\"dd=/dud.iso\""
+      with_items:
+        - "{{ profiles_i40e.stdout_lines | intersect(profiles_existing.stdout_lines) }}"
+      become: yes
+      become_method: sudo
+
+    - name: "Copy initrd with the i40e patch into applicable distro(s)"
+      copy:
+        src: "{{ hdp_solution_updates_path_local }}/i40e/{{ item }}/initrd-i40e.img"
+        dest: "/srv/www/cobbler/images/{{ item }}/initrd.img"
+        owner: "root"
+        group: "root"
+      with_items:
+        - "{{ profiles_i40e.stdout_lines | intersect(profiles_existing.stdout_lines) }}"
+      become: yes
+      become_method: sudo
+
+
+    # place the partition scripts and support utilities where the kickstart processes can retrieve them 
+    # <revisit> to determine if there is a better way to accomplish the below
+    - name: "Create partitioning scripts directory"   
+      file:
+        path: "/var/www/html/install/custom/partition/"
+        state: directory
+        recurse: yes
+        owner: "root"
+        group: "root"
+      become: yes
+      become_method: sudo
+
+    - name: "Copy partitioning scripts into deployment container"
+      copy:
+        src: "{{ item }}"
+        dest: "/var/www/html/install/custom/partition/"
+        owner: "root"
+        group: "root"
+      with_fileglob:
+        - "{{ hdp_solution_updates_path_local }}/partition/*"
+      become: yes
+      become_method: sudo
+
+    - name: "Create storcli64 utilities directory"
+      file:
+        path: "/var/www/html/install/custom/storcli64/"
+        state: directory
+        recurse: yes
+        owner: "root"
+        group: "root"
+      become: yes
+      become_method: sudo
+
+    - name: "Copy storcli64 utilities into deployment container"
+      copy:
+        src: "{{ item }}"
+        dest: "/var/www/html/install/custom/storcli64/"
+        owner: "root"
+        group: "root"
+      with_fileglob:
+        - "{{ hdp_solution_updates_path_local }}/storcli64/*"
+      become: yes
+      become_method: sudo
+
