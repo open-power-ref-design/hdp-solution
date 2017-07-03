@@ -4,14 +4,13 @@
 # ===============================================================================================================================
 # options
 # ===============================================================================================================================
-# 2017-05-05 - Initial input, derived from xcat - woodbury
+# 2017-05-05 - Initial input - woodbury
 # cmdline
 
 # set the language
 # lang en_US
 lang en_US.UTF-8
 
-# xcat original <<<confirm done in postscripts>>>
 # network --onboot=yes --bootproto=dhcp --device=0c:c4:7a:87:01:78
 
 # include the url statement, generated in %pre
@@ -193,12 +192,6 @@ echo "============================================================="
 
 } >>/tmp/pre-install.log 2>&1
 
-# TEMP FOR DEBUG - REMOVE
-# upload the pre-install log to the provisioning server HOST (not container)
-curl --upload-file /tmp/pre-install.log --url ftp://172.19.188.3/ftp/"$system_name_saved"--pre-install.log --user genesis:passw0rd
-curl --upload-file /tmp/partitionfile   --url ftp://172.19.188.3/ftp/"$system_name_saved"--partitionfile   --user genesis:passw0rd
-curl --upload-file ${0}                 --url ftp://172.19.188.3/ftp/"$system_name_saved"--kickstart.pre   --user genesis:passw0rd
-
 #end raw
 %end
 
@@ -238,81 +231,11 @@ echo -e "gpgcheck=0" >> /etc/yum.repos.d/$(distro).repo
 $SNIPPET('kickstart_done')
 
 echo "============================================================="
-echo "...special debug section Kickstart POST-Installation Script..."
-echo "============================================================="
-
-#raw
-echo "1111----"
-df
-echo "2222----"
-cat /etc/fstab
-
-echo "3333----"
-devices="$(df | grep "^/dev/" | awk '{print $1}')"
-echo "${devices}"
-echo "4444----"
-
-for device in $devices
-do
-  tune2fs -c 1 $device
-done
-
-for device in $devices
-do
-  tune2fs -l $device
-done
-
-
-
-echo "5555----"
-df
-mountpoints="$(df | grep "^/dev/" | awk '{print $6}')"
-echo "${mountpoints}"
-echo "6666----" 
-
-# for mountpoint in $mountpoints
-# do
-#   umount $mountpoint
-#   RC=$?
-#   echo "umount $mountpoint ... RC=$RC"
-#   if [ $RC != 0 ]; then
-#     echo "delaying 15s..."
-#     sleep 15s
-#     echo "retrying..."
-#     umount $mountpoint
-#     RC=$?
-#     echo "umount $mountpoint ... RC=$RC (retry)"
-#   fi 
-# done
-
-for device in $devices
-do
-  e2fsck -p $device
-  echo "e2fsck -p $device ... RC=$RC"
-done
-
-df
-cat /etc/fstab
-mount -a
-df
-
-date
-
-#end raw
-
-echo "============================================================="
 echo "End Kickstart POST-Installation Script..."
 echo "============================================================="
 
 system_name_saved="$system_name"
 
 } >>/tmp/post-install.log 2>&1
-
-#raw
-# TEMP FOR DEBUG - REMOVE
-# upload the pre-install log to the provisioning server HOST (not container)
-curl --upload-file /tmp/post-install.log --url ftp://172.19.188.3/ftp/"$system_name_saved"--post-install.log --user genesis:passw0rd
-curl --upload-file ${0}                  --url ftp://172.19.188.3/ftp/"$system_name_saved"--kickstart.post   --user genesis:passw0rd
-#end raw
 
 %end
