@@ -144,9 +144,11 @@ export COBBLERMASTER=$http_server
 # indicate cobbler as the provisioning utility on the provisioning server - used within the partitioning script
 export CONTEXT="cobbler"
 
-# NOTE: The following code is very fragile -- determining node_type from the system_name.  Rework to use a better method.
+# NOTE: The following code is dependent upon the genesis hostname naming scheme
+# the node_type is inferred from the system_name (hostname)
+# the hostname up to and excluding the last "-" is the hostname stem which is specified in the config.yml for each node_type
 part_script_remote=""
-node_type=`echo "$system_name" | cut -b 1-2`
+node_type=`echo "$system_name" | sed 's/\(.*\)-.*/\1/'`
 cobbler_http_server="$http_server"
 echo "kickstart.%pre: system_name=\"$system_name\""
 echo "kickstart.%pre: node_type=\"$node_type\""
@@ -155,12 +157,13 @@ echo "kickstart.%pre: cobbler_http_server=\"$cobbler_http_server\""
 system_name_saved="$system_name"
 
 #raw
-# use the system name to infer the node role...
-if [ $node_type = "mn" ]; then
+# use the system name to infer the node role (node type)...
+# the finalize_inputs.sh script inserts the correct string compare into the lines below before passing to genesis
+if [ $node_type = "mn" ]; then     # insert {{ HOSTNAME_STEM_MASTER }}, do not edit this line, see finalize_inputs.sh
     part_script_remote="part_Stratton_raid10.sh"
-elif [ $node_type = "en" ]; then
+elif [ $node_type = "en" ]; then   # insert {{ HOSTNAME_STEM_EDGE }}, do not edit this line, see finalize_inputs.sh
     part_script_remote="part_Stratton_raid10.sh"
-elif [ $node_type = "wn" ]; then
+elif [ $node_type = "wn" ]; then   # insert {{ HOSTNAME_STEM_WORKER }}, do not edit this line, see finalize_inputs.sh
 #    part_script_remote="part_Briggs_8jbods.sh"
     part_script_remote="part_Briggs_storcli64_allraid0.sh"
 else
