@@ -18,6 +18,7 @@
 - name: lxc-update.yml
   hosts: localhost
   gather_facts: yes
+  environment: "{{ deployment_environment }}"
   vars:
     os_image_links:
       - name: ubuntu-14.04.5-server-amd64
@@ -85,7 +86,30 @@
         checksum: "sha1:{{ item.sha1sum }}"
       with_items: "{{ image_list_unique }}"
 
+    - name: "Check if POSTROUTING nat rule already exists for client network"
+      shell: "iptables -L POSTROUTING -t nat | grep {{ container_mgmt_subnet }} || true"
+      register: postrouting_nat_client_net
+      become: yes
+      become_method: sudo
+      when: deployer_gateway
+
+    - name: "If deployer-gateway is true create iptables nat rule"
+      command: |
+        iptables
+        -t nat
+        -A POSTROUTING
+        -p all
+        -s {{ container_mgmt_subnet }}
+        ! -d {{ container_mgmt_subnet }}
+        -j MASQUERADE
+      become: yes
+      become_method: sudo
+      when:
+        - deployer_gateway
+        - postrouting_nat_client_net.stdout == ""
+
 - hosts: deployer
+  environment: "{{ deployment_environment }}"
   vars:
     scripts_path_local: "{{ hostvars['localhost']['scripts_path_local'] }}"
     images_local: "{{ hostvars['localhost']['project_path_local'] }}/os_images"
@@ -155,7 +179,7 @@
         source {{ venv_path }}/bin/activate &&
         pip install --ignore-installed
         'pyasn1==0.2.3'
-        'pysnmp==4.3.4'
+        'pysnmp==4.3.5'
         'pyaml==16.12.2'
         'orderedattrdict==1.4.3'
         'pyghmi==1.0.18'
