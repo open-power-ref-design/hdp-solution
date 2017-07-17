@@ -5,7 +5,7 @@
 # options
 # ===============================================================================================================================
 # 2017-05-05 - Initial input - woodbury
-# 2017-07-17 - Changed to enable script update of node type checks for partitioning scripts
+# 2017-07-17 - Update to enable script update of node type checks for partitioning scripts
 # cmdline
 
 # set the language
