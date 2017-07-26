@@ -14,6 +14,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# ------------------------------------------------------------------------------
+# update_genesis.sh
+#
+# This script updates the genesis installation to customize it to be suitable
+# for the hdp-solution.
+# ------------------------------------------------------------------------------
 
 set -e
 PWD=$(pwd)
