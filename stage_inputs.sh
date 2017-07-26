@@ -14,6 +14,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# ------------------------------------------------------------------------------
+# stage_inputs.sh
+#
+# This script stages the inputs required by the automated deploy processes.
+# The inputs are placed in the "hdp-solution-inputs" directory, and this 
+# script is the first step in preparing that directory and its contents. The 
+# initial contents of the inputs drectory are collected from multiple sources.  
+# The two primary sources are:
+#
+#   1) Files come from the "hdp-solution" toolkit.  These files are used to 
+#      customize and update the genesis installation to be suitable for the 
+#      hdp-solution deployment generally.
+#
+#   2) The RHEL installation iso and related binaries. These must be obtained
+#      and/or created by the user, and links to these must be provided to
+#      when this script is invoked.
+#
+# After staging by this script, modification to these inputs is typically
+# required before they are ready to be used as input to the deploy processes.
+# ------------------------------------------------------------------------------
 
 set -e
 PWD=$(pwd)

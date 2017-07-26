@@ -14,6 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# ------------------------------------------------------------------------------
+# finalize_inputs_hostnames.py
+#
+# This module propagates hostname stem indications from the config.yml to the
+# kickstart file.  This is required to allow the kickstart file to recognize
+# the node type for a partiular node.  (A more robust method for accomplishing
+# this is planned based on the node role and the particular server type.)
+# ------------------------------------------------------------------------------
 
 from __future__ import nested_scopes, generators, division, absolute_import, \
     with_statement, print_function, unicode_literals
