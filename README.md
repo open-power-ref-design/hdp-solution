@@ -6,8 +6,8 @@ This repository contains instructions, guidelines, and automation tools for depl
 ## Contents
 This repository is organized into the following:
 - **Documents and Related Files** (in the [/docs](docs/) directory)
-    - The **Deployment Guide** is the principal document of this set
-    - The other documents and spreadsheets are referenced by and support the **Deployment Guide**
+    - The document [**How to Deploy an IBM OpenPOWER Cluster for Hortonworks Data Platform**]/(docs/HDP%20on%20Power%20Deployment%20v1.0.pdf) is the primary and starting reference for understanding and using this toolkit.
+    - The other documents are referenced by and support the **How to Deploy an IBM OpenPOWER Cluster for Hortonworks Data Platform** document.
     
 - **Input Files** (in the [/inputs](inputs/) directory)
     - These files are various machine readable content used as input to the deployment process and referenced by the automation scripts
@@ -16,4 +16,4 @@ This repository is organized into the following:
     - These scripts are the primary automation scripts used by the deployment process
     
 ## Getting Started
-Refer to the [**Deployment Guide**](docs/HDP%20on%20Power%20-%20Deployment%20Guide%20v1.0.pdf) in this toolkit
+Refer [**How to Deploy an IBM OpenPOWER Cluster for Hortonworks Data Platform**](docs/HDP%20on%20Power%20-%20Deployment%20Guide%20v1.0.pdf) for instructions and procedures regarding how to use this toolkit.
