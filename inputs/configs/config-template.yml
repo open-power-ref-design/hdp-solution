@@ -22,57 +22,56 @@
 # "hdp-rack1" could be changed to "base-rack")
 #
 # ----------------------------------------------------------------------------
-# config.yml template for HDP on Power Solution - Deployment Guide
+# config.yml template for HDP on Power Deployment
+# 2017-07-31 v1.0
 # ----------------------------------------------------------------------------
-
 version: 1.1
 
+# ----------------------------------------------------------------------------
+# general parameters and switch management parameters
+# ----------------------------------------------------------------------------
 log_level: debug
 introspection-enabled: false  # only supported for ppc64 deployer & clients
-deployer-gateway: false  # deployer will be configured as the default gateway for all client nodes
+deployer-gateway: false  # true = deployer node to be configured as the default gateway for all client nodes
 
-# network definition for switch mgmt ips
-ipaddr-mgmt-network: 172.19.190.0/24 
-vlan-mgmt-network: 190 # will be created on the switch, and a bridge on node
+# network definition for Internal Management Network
+ipaddr-mgmt-network: 172.19.190.0/24 # subnet definition for Internal Management Network
+vlan-mgmt-network: 190 # vlan id for Internal Management Network; to be created on the switch by Genesis, and a bridge and endpoint to it on the deployer node
 
-# network definition for pxe and bmc
-ipaddr-mgmt-client-network: 172.19.188.0/24
-vlan-mgmt-client-network: 188 # genesis will create an tagged bridge and endpoint for this vlan
+# network definition for Provisioning and Service Network (a/k/a pxe and bmc networks)
+ipaddr-mgmt-client-network: 172.19.188.0/24 # subnet definition for Provisioning and Service Network (combined network)
+vlan-mgmt-client-network: 188 # vlan id for Provisioning and Service Network; to be created on the switch by Genesis, and a bridge and endpoint to it on the deployer node
 
-# deployer node primary trunk port on the 1Gb switch - Genesis modifies the switch config to trunk and add above vlans...
-port-mgmt-network: 31  # switch-side port - deployer node primary trunk port on the 1Gb switch - Genesis modifies the switch config to trunk and add above vlans...
+# deployer node primary trunk port on the 1Gb switch; Genesis modifies the switch config to trunk and add above vlans...
+port-mgmt-network: 31  # switch-side port - deployer node primary trunk port on the 1Gb switch; Genesis modifies the switch config to trunk and add above vlans
 
-# NOTE: The "_rack:" keywords must match the the corresponding rack keyword
-# under the keyword;
-# node-templates:
-#     _node name:
-#         ports:
-# These are the ports on the mgmt switch to which the data switchs' mgmt ports are connected.  Express as a list.
-port-mgmt-data-network: # Genesis sets pvid on these
+# NOTE: The "hdp-rack1" identifier must match the rack indications throughout this file
+# These are the ports on the mgmt switch (1Gb switch) to which the data switchs' mgmt ports are connected.  Express as a list.
+port-mgmt-data-network: # Genesis sets the native vlan to the Internal Management Network for these ports
     hdp-rack1:
         - 45
         - 46
 ipaddr-mgmt-switch:
-    hdp-rack1: 172.19.190.11 # genesis creates this ip for mgmt of switch
-label-mgmt-switch-external-dev: enP2p1s0f0 # physical port on which Genesis builds bridges
-cidr-mgmt-switch-external-dev: 10.19.60.25/24  # existing, or must be available to use or on an interface already
-ipaddr-mgmt-switch-external:
-    hdp-rack1: 10.19.60.11
-ipaddr-data-switch: # With MLAG, must be a list with two elements
+    hdp-rack1: 172.19.190.11 # genesis creates this ip address on the 1Gb switch for use as the management interface to the switch
+label-mgmt-switch-external-dev: enP2p1s0f0 # the physical port identifier on the deployer node on which Genesis builds its 1Gb bridges
+cidr-mgmt-switch-external-dev: 10.19.60.25/24  # the ip address (cidr format) on the deployer node for initial access to the Management Network;  ip address must be available to use or configured on an interface on the deployer node already
+ipaddr-mgmt-switch-external:  
+    hdp-rack1: 10.19.60.11 # the pre-existing ip address on the mgmt switch (1Gb switch)
+ipaddr-data-switch: # the ip addresses for management interfaces (MGMT0) on the data switch (10Gb switch);  to be applied by Genesis;  with mlag, must be a list with two elements
     hdp-rack1:
         - 172.19.190.13
         - 172.19.190.14
-ipaddr-mlag-vip:
+ipaddr-mlag-vip: # the virtual ip address for the mlag configuration on the data switch
     hdp-rack1: 172.19.190.214
-cidr-mlag-ipl:
+cidr-mlag-ipl: # the ip addresses for mlag ipl connection
     hdp-rack1:
         - 10.10.10.1/24
         - 10.10.10.2/24
 mlag-vlan:
-    hdp-rack1: 4000
+    hdp-rack1: 4000 # the vlan id for the mlag ipl connection
 mlag-port-channel:
-    hdp-rack1: 1001
-mlag-ipl-ports:
+    hdp-rack1: 1001 # the port channel id for the mlag ipl connection
+mlag-ipl-ports: # the physical port numbers for the mlag ipl connections
     hdp-rack1:  # implicit: the first list is for the first 10Gb switch, the second list is for the second 10Gb switch
         -
             - 59
@@ -80,61 +79,48 @@ mlag-ipl-ports:
         -
             - 59
             - 60
-redundant-network: true # placeholder... triggering off mlag above
-write-switch-memory: false
+redundant-network: true # placeholder only;  redundant switch configuration is presently triggered off mlag entries above
+write-switch-memory: false # true = save the switch configuration when completed
 
-# for newly provisioned OSes
+# for newly provisioned OSes:
 userid-default: user
 password-default: passw0rd
 # An encrypted password hash can also be provided using the following format:
 # password-default-crypted: $6$STFB8U/AyA$sVhg5a/2RvDiXof9EhADVcUm/7Tq8T4m0dcdHLFZkOr.pCjJr2eH8RS56W7ZUWw6Zsm2sKrkcS4Xc8910JMOw.
+
+# userids and passwords for the switches; to be used by Genesis
 userid-mgmt-switch: admin        # applies to all mgmt switches
 password-mgmt-switch: admin      # applies to all mgmt switches
 userid-data-switch: admin
 password-data-switch: admin
-# Rack information is optional (not required to be present)
+# Rack information; this information is optional (i.e. not required to be present)
 racks:
     - rack-id: hdp-rack1
       data-center: rst
       room: 025-1
       row: f33
+
+# ----------------------------------------------------------------------------
+# network and switch parameters
+# ----------------------------------------------------------------------------
 networks:
-# these ports are *target node* indications
+# the following are *target node* indications (i.e. references from the point-of-view of the nodes being provisioned)
 # the deployer node identifies its port by using the physical port used for the default route
 
     dataSwA:
         description: Data port to switch A
         method: manual
-        eth-port: eth10
+        eth-port: eth10 # must currently be indicated as "eth10" in the config.yml
 
     dataSwB:
         description: Data port to switch B
         method: manual
-        eth-port: eth11
+        eth-port: eth11 # must currently be indicated as "eth10" in the config.yml
 
     _pxe-dhcp:
         description: Provisioning Network (pxe)
         method: dhcp
-        eth-port: eth15
-
- # 1Gb connections not supported by Genesis
- #   management:
- #       description: Management Network
- #       method: static
- #       addr: 10.19.60.0/24
- #       available-ips:
- #           - 10.19.60.220 10.19.60.239  # address range
- #       vlan: 1 # cannot set on 1Gb network (mgmt switch - does data switch...)
- #       eth-port: eth15
-
- #   campus:
- #       description: Campus Network
- #       method: static
- #       addr: 172.19.60.0/24
- #       available-ips:
- #           - 172.19.60.220 172.19.60.239  # address range
- #       vlan: 22
- #       eth-port: enP2p1s0f0
+        eth-port: eth15 # must currently be indicated as "eth15" in the config.yml
 
     data:  # data network
         description: Data Network
@@ -143,16 +129,12 @@ networks:
         available-ips:
             - 172.19.66.220 172.19.66.239  # address range (in order for a list)
         broadcast: 172.19.66.255
-#        gateway: 10.0.16.1  # no uplink, confirm this is optional
-#        dns-nameservers: 10.19.60.25 # point to smn05 for now; is this optional?
-#        dns-search: hdp.net
         method: static
         # name of physical interfaces to bond together.
         bond-interfaces: # these must be eth10 and eth11 for now - hardcoded in Genesis
             - eth10
             - eth11
         # if necessary not all bond modes support a primary slave
-#        bond-primary: eth10 # not sure this is needed for rhel, confirm
         # bond-mode, needs to be one of 7 types
         # either name or number can be used.
         # 0 balance-rr
@@ -165,19 +147,24 @@ networks:
         # bond-mode: active-backup
         bond-mode: 4  # confirm this maps correctly to rhel bond mode
         # there is a long list of optional bond arguments.
-        # Specify them here and they will be added to end of bond definition
+        # specify them here and they will be added to end of bond definition
         optional-bond-arguments:
             bond-miimon: 100
-#            bond-lacp-rate: 1
-            xmit_hash_policy: layer3+4  # confirm this gets passed correctly - must match ifcfg file syntax?
+            xmit_hash_policy: layer3+4  # confirm this gets passed correctly - must match ifcfg file syntax
 
+# ----------------------------------------------------------------------------
+# node provisioning parameters (templates for each node type)
+# ----------------------------------------------------------------------------
 node-templates:
-    master:
+    # ----------------------------------------------------------------------------
+    # master nodes
+    # ----------------------------------------------------------------------------
+    master: # provisioning parametes for "master" nodes
         hostname: mn  # will be named by Genesis as: mn-1, mn-2, etc...
         userid-ipmi: ADMIN
         password-ipmi: ADMIN
         cobbler-profile: {{ DISTRO_NAME }}
-        os-disk: /dev/sda # rework (nts), if second device, will sw raid...
+        os-disk: /dev/sda # not used; kickstart and partitioning scripts select the OS install disk and overrride this value
         users:
             - name: user1
               groups: sudo
@@ -187,28 +174,26 @@ node-templates:
             mac-pxe: eth15    # This keyword is paired to ports: pxe: keyword - hardcoded to be on the 1Gb switch - names and port labels must be exactly as shown also
             mac-eth10: eth10  # This keyword is paired to ports: eth10: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also
             mac-eth11: eth11  # This keyword is paired to ports: eth11: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also
-        # Each host has one network interface for each of these ports and
-        # these port numbers represent the switch port number to which the host
-        # interface is physically cabled.
-        # To add or remove hosts for this node-template you add or remove
-        # switch port numbers to these ports.
-        ports:
-            pxe: # names are hardcoded in Genesis, must be "pxe"
+        # each host has one network interface for each of these port groups;
+        # these port numbers represent the switch port number to which the host interface is physically cabled;
+        # to add or remove hosts for this node-template, add or remove switch port numbers to these ports groups;
+        ports: # port groups and port indications for each node of this type; names currently must be "pxe", "impi", "eth10", and "eth11"
+            pxe:
                 hdp-rack1:
                     - 25
                     - 26
                     - 27
-            ipmi: # hardcoded pxe port name
+            ipmi:
                 hdp-rack1:
                     - 7
                     - 8
                     - 9
-            eth10: # names are hardcoded in Genesis, must be "eth10"
+            eth10:
                 hdp-rack1:
                     - 7
                     - 8
                     - 9
-            eth11: # names are hardcoded in Genesis, must be "eth11"
+            eth11:
                 hdp-rack1:
                     - 7
                     - 8
@@ -218,14 +203,16 @@ node-templates:
             - dataSwA
             - dataSwB
             - data
-#            - management # not supported
-#            - campus     # not supported - no other connections on 1Gb switch
-    edge:
+
+    # ----------------------------------------------------------------------------
+    # edge nodes
+    # ----------------------------------------------------------------------------
+    edge: # provisioning parametes for "edge" nodes
         hostname: en  # will be named by Genesis as: en-1, en-2, etc...
         userid-ipmi: ADMIN
         password-ipmi: ADMIN
         cobbler-profile: {{ DISTRO_NAME }}
-        os-disk: /dev/sda # rework (nts), if second device, will sw raid...
+        os-disk: /dev/sda # not used; kickstart and partitioning scripts select the OS install disk and overrride this value
         users:
             - name: user1
               groups: sudo
@@ -235,22 +222,20 @@ node-templates:
             mac-pxe: eth15    # This keyword is paired to ports: pxe: keyword - hardcoded to be on the 1Gb switch - names and port labels must be exactly as shown also
             mac-eth10: eth10  # This keyword is paired to ports: eth10: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also
             mac-eth11: eth11  # This keyword is paired to ports: eth11: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also
-        # Each host has one network interface for each of these ports and
-        # these port numbers represent the switch port number to which the host
-        # interface is physically cabled.
-        # To add or remove hosts for this node-template you add or remove
-        # switch port numbers to these ports.
-        ports:
-            pxe: # names are hardcoded in Genesis, must be "pxe"
+        # each host has one network interface for each of these port groups;
+        # these port numbers represent the switch port number to which the host interface is physically cabled;
+        # to add or remove hosts for this node-template, add or remove switch port numbers to these ports groups;
+        ports: # port groups and port indications for each node of this type; names currently must be "pxe", "impi", "eth10", and "eth11"
+            pxe:
                 hdp-rack1:
                     - 24
-            ipmi: # hardcoded pxe port name
+            ipmi:
                 hdp-rack1:
                     - 6
-            eth10: # names are hardcoded in Genesis, must be "eth10"
+            eth10:
                 hdp-rack1:
                     - 6
-            eth11: # names are hardcoded in Genesis, must be "eth11"
+            eth11:
                 hdp-rack1:
                     - 6
         networks:
@@ -258,9 +243,11 @@ node-templates:
             - dataSwA
             - dataSwB
             - data
-#            - management # not supported
-#            - campus     # not supported - no other connections on 1Gb switch
-    worker:
+
+    # ----------------------------------------------------------------------------
+    # worker nodes
+    # ----------------------------------------------------------------------------
+    worker: # provisioning parametes for "worker" nodes
         hostname: wn
         userid-ipmi: ADMIN
         password-ipmi: ADMIN
@@ -269,12 +256,10 @@ node-templates:
             mac-pxe: eth15    # This keyword is paired to ports: pxe: keyword - hardcoded to be on the 1Gb switch - names and port labels must be exactly as shown also
             mac-eth10: eth10  # This keyword is paired to ports: eth10: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also
             mac-eth11: eth11  # This keyword is paired to ports: eth11: keyword - hardcoded to assume the 10Gb switch - names and port labels must be exactly as shown also1
-        # Each host has one network interface for each of these ports and
-        # these port numbers represent the switch port number to which the host
-        # interface is cabled.
-        # To add or remove hosts for this node-template you add or remove
-        # switch port numbers to these ports.
-        ports:
+        # each host has one network interface for each of these port groups;
+        # these port numbers represent the switch port number to which the host interface is physically cabled;
+        # to add or remove hosts for this node-template, add or remove switch port numbers to these ports groups;
+        ports: # port groups and port indications for each node of this type; names currently must be "pxe", "impi", "eth10", and "eth11"
             pxe:
                 hdp-rack1:
                     - 29
@@ -285,7 +270,7 @@ node-templates:
                     - 34
                     - 35
                     - 36
-            ipmi: # hardcoded pxe port name
+            ipmi:
                 hdp-rack1:
                     - 11
                     - 12
@@ -320,8 +305,6 @@ node-templates:
             - dataSwA
             - dataSwB
             - data
-#            - management # not supported
-#            - campus     # not supported - no other connections on 1Gb switch
 
 software-bootstrap:
     all: touch tempfile
@@ -329,9 +312,6 @@ software-bootstrap:
     en[0]: touch edge-node
     wn[0]: touch worker-node
 #    all: apt-get update
-#    compute[0]: |
-#        apt-get update
-#        apt-get upgrade -y
 
 # Additional key/value pairs are not processed by Genesis, but are copied into
 # the inventory.yml file and made available to post-Genesis scripts and/or
