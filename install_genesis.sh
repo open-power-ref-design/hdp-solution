@@ -22,8 +22,22 @@
 # script.  After this scripts completes, the automated deloy process 
 # ('gen deploy') may be run.
 # ------------------------------------------------------------------------------
+# 2017-08-16 woodbury - added check and correction of network file
+# ------------------------------------------------------------------------------
 
 set -e
+
+# check for left-overs from a previous failed install attempt and offer to delete them
+shopt -s nullglob
+IFCFGS="/etc/sysconfig/network-scripts/ifcfg-.*"
+for IFCFG in $IFCFGS
+do
+    echo "WARNING: A network config file, \"$IFCFG\", was found that appears to be invalid:"
+    read -p "Delete file \"$IFCFG\" ? (y/n) " resp
+    if [ $resp == "y" ]; then
+        sudo rm $IFCFG
+    fi
+done
 
 # 1) download genesis base code and files (from git)
 # 2) apply initial patches
